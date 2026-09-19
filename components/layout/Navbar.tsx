@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Search,
   Heart,
@@ -13,8 +14,10 @@ import {
   MapPin,
   Truck,
 } from "lucide-react";
+import { useCart } from "@/lib/cartContext";
 
 const navLinks = [
+  { label: "Home", href: "/" },
   {
     label: "Shop",
     href: "/shop",
@@ -44,6 +47,8 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const { totalItems } = useCart();
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -82,7 +87,14 @@ export default function Navbar() {
             <span className="font-medium">Free shipping on orders over $75</span>
           </div>
           <div className="hidden sm:flex items-center gap-4 text-gray-400">
-            <Link href="/track" className="hover:text-white transition-colors">Track Order</Link>
+            <Link
+              href="/track"
+              className={`hover:text-white transition-colors flex items-center gap-1 ${
+                pathname === "/track" ? "text-[#d4f000]" : ""
+              }`}
+            >
+              Track Order
+            </Link>
             <Link href="/support" className="hover:text-white transition-colors">Help</Link>
           </div>
         </div>
@@ -123,7 +135,13 @@ export default function Navbar() {
                 >
                   <Link
                     href={item.href}
-                    className={`nav-link flex items-center gap-1 px-3.5 py-2 text-sm font-semibold text-[#0d0d0d] rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap`}
+                    className={`nav-link flex items-center gap-1 px-3.5 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                      item.href === "/"
+                        ? pathname === "/"
+                          ? "text-[#0d0d0d] bg-[#d4f000]/20 font-bold"
+                          : "text-[#0d0d0d] hover:bg-gray-50"
+                        : "text-[#0d0d0d] hover:bg-gray-50"
+                    }`}
                   >
                     {item.label}
                     {item.children && <ChevronDown size={13} className="mt-0.5 text-gray-400" />}
@@ -180,7 +198,11 @@ export default function Navbar() {
 
               <Link href="/cart" className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Cart">
                 <ShoppingCart size={20} className="text-[#0d0d0d]" />
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#0d0d0d] rounded-full text-[10px] font-bold text-white flex items-center justify-center">2</span>
+                {totalItems > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#0d0d0d] rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+                    {totalItems > 9 ? "9+" : totalItems}
+                  </span>
+                )}
               </Link>
 
               <Link
@@ -275,7 +297,11 @@ export default function Navbar() {
                   className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#f4f4f4] transition-colors">
                   <ShoppingCart size={18} className="text-gray-500" />
                   <span className="font-semibold text-[#0d0d0d]">Cart</span>
-                  <span className="ml-auto bg-[#0d0d0d] text-white text-xs font-bold px-2 py-0.5 rounded-full">2</span>
+                  {totalItems > 0 && (
+                    <span className="ml-auto bg-[#0d0d0d] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      {totalItems > 9 ? "9+" : totalItems}
+                    </span>
+                  )}
                 </Link>
               </div>
             </div>

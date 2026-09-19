@@ -28,18 +28,44 @@ function pad(n: number) {
 }
 
 export default function CountdownTimer({ endsAt, className = "" }: CountdownTimerProps) {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>(getTimeLeft(endsAt));
+  // Start as null so the server renders nothing — avoids hydration mismatch
+  // caused by Date.now() differing between server render and client hydration.
+  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
 
   useEffect(() => {
+    // Set the real value immediately on mount (client only)
+    setTimeLeft(getTimeLeft(endsAt));
+
     const timer = setInterval(() => setTimeLeft(getTimeLeft(endsAt)), 1000);
     return () => clearInterval(timer);
   }, [endsAt]);
 
+  // Render an equal-height placeholder on the server / before hydration
+  if (!timeLeft) {
+    return (
+      <div className={`flex items-center gap-1.5 ${className}`} aria-hidden="true">
+        {["Days", "Hrs", "Min", "Sec"].map((label, i, arr) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <div className="flex flex-col items-center">
+              <div className="bg-[#0d0d0d] text-[#d4f000] font-mono font-bold text-sm px-2 py-1 rounded min-w-[32px] text-center">
+                --
+              </div>
+              <span className="text-[10px] text-gray-500 mt-0.5">{label}</span>
+            </div>
+            {i < arr.length - 1 && (
+              <span className="text-gray-400 font-bold mb-3">:</span>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   const units = [
     { label: "Days", value: timeLeft.days },
-    { label: "Hrs", value: timeLeft.hours },
-    { label: "Min", value: timeLeft.minutes },
-    { label: "Sec", value: timeLeft.seconds },
+    { label: "Hrs",  value: timeLeft.hours },
+    { label: "Min",  value: timeLeft.minutes },
+    { label: "Sec",  value: timeLeft.seconds },
   ];
 
   return (
