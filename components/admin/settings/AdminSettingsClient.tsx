@@ -13,6 +13,14 @@ const TABS: { id: Tab; icon: typeof Building2; label: string }[] = [
   { id:"security",      icon:Shield,     label:"Security" },
 ];
 
+function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button type="button" onClick={onToggle} className={`relative w-11 h-6 rounded-full transition-colors ${on?"bg-[#0d0d0d]":"bg-gray-200"}`}>
+      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${on?"left-6":"left-1"}`}/>
+    </button>
+  );
+}
+
 export default function AdminSettingsClient() {
   const [tab, setTab] = useState<Tab>("business");
   const [saved, setSaved] = useState(false);
@@ -27,12 +35,6 @@ export default function AdminSettingsClient() {
 
   const ic = "w-full bg-[#f4f4f4] border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#d4f000]";
   const lbl = (t: string) => <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">{t}</label>;
-  const Toggle = ({ on, onToggle }: { on: boolean; onToggle: () => void }) => (
-    <button type="button" onClick={onToggle} className={`relative w-11 h-6 rounded-full transition-colors ${on?"bg-[#0d0d0d]":"bg-gray-200"}`}>
-      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${on?"left-6":"left-1"}`}/>
-    </button>
-  );
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">

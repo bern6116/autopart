@@ -14,7 +14,7 @@ CREATE TABLE profiles (
   last_name    TEXT DEFAULT '',
   phone        TEXT,
   avatar_url   TEXT,
-  role         TEXT DEFAULT 'cashier' CHECK (role IN ('super_admin','admin','manager','cashier','inventory_staff')),
+  role         TEXT DEFAULT 'customer' CHECK (role IN ('super_admin','admin','manager','cashier','inventory_staff','customer')),
   is_active    BOOLEAN DEFAULT true,
   last_login   TIMESTAMPTZ,
   created_at   TIMESTAMPTZ DEFAULT NOW(),

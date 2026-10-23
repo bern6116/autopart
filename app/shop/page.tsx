@@ -4,9 +4,8 @@ import Footer from "@/components/layout/Footer";
 import ShopClient from "@/components/shop/ShopClient";
 
 export const metadata: Metadata = {
-  title: "Shop Auto Parts",
-  description:
-    "Browse 500,000+ OEM and aftermarket auto parts. Filter by category, brand, vehicle, price, and more.",
+  title: "Shop Honda Parts",
+  description: "Browse confirmed Honda-fit parts by category, parts brand, model, year, price, and availability. AutoCore is independent and is not an official Honda dealership.",
 };
 
 export default function ShopPage() {

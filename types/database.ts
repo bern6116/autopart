@@ -2,7 +2,7 @@
 // AUTO CORE — Complete Database Types
 // ============================================================
 
-export type UserRole = "super_admin" | "admin" | "manager" | "cashier" | "inventory_staff";
+export type UserRole = "super_admin" | "admin" | "manager" | "cashier" | "inventory_staff" | "customer";
 export type ProductStatus = "active" | "inactive" | "out_of_stock";
 export type OrderStatus = "pending" | "confirmed" | "processing" | "ready" | "shipped" | "delivered" | "cancelled" | "refunded";
 export type PaymentMethod = "cash" | "card" | "online" | "cod" | "other";
@@ -17,6 +17,7 @@ export interface Profile {
   id: string;
   email: string;
   first_name: string;
+  middle_name?: string | null;
   last_name: string;
   phone: string | null;
   avatar_url: string | null;
@@ -143,6 +144,20 @@ export interface DBInventoryTransaction {
   user?: Profile;
 }
 
+export type InventoryOperationType = "checkout" | "cancel_order" | "receive_purchase" | "adjust_stock";
+
+export interface DBStockMovement {
+  id: string;
+  operation_id: string;
+  product_id: string;
+  quantity_delta: number;
+  stock_before: number;
+  stock_after: number;
+  reason: string;
+  created_at: string;
+  product?: DBProduct;
+}
+
 // ── Purchase Orders ───────────────────────────────────────────
 export interface DBPurchaseOrder {
   id: string;
@@ -180,6 +195,7 @@ export interface DBCustomer {
   id: string;
   user_id: string | null;
   first_name: string;
+  middle_name: string | null;
   last_name: string;
   email: string;
   phone: string;

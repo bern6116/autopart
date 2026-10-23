@@ -28,4 +28,5 @@ export interface ShopFiltersState {
   vehicleMake: string;
   vehicleModel: string;
   vehicleYear: string;
+  vehicleEngine: string;
 }

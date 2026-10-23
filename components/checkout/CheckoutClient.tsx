@@ -9,6 +9,7 @@ import {
   ShieldCheck, Banknote, Wifi, Store,
 } from "lucide-react";
 import { useCart } from "@/lib/cartContext";
+import { checkoutOrder, createIdempotencyKey } from "@/lib/inventory-service";
 
 // ── Types ─────────────────────────────────────────────────────
 interface ShippingForm {
@@ -62,6 +63,8 @@ export default function CheckoutClient() {
   const [payErrs,  setPayErrs]  = useState<Partial<Record<keyof PaymentForm,string>>>({});
   const [placing, setPlacing] = useState(false);
   const [orderNum, setOrderNum] = useState<string|null>(null);
+  const [placeError, setPlaceError] = useState("");
+  const [checkoutKey, setCheckoutKey] = useState(() => createIdempotencyKey("checkout"));
 
   const delivery = DELIVERY_OPTIONS.find(d=>d.id===ship.deliveryMethod);
   const shipCost = delivery?.price ?? 9.99;
@@ -95,12 +98,25 @@ export default function CheckoutClient() {
 
   const placeOrder = async () => {
     setPlacing(true);
-    await new Promise(r=>setTimeout(r,1400));
-    const num = `AC-${Date.now().toString().slice(-8)}`;
-    setOrderNum(num);
-    clearCart();
-    setStep(4);
-    setPlacing(false);
+    setPlaceError("");
+    try {
+      const result = await checkoutOrder({
+        idempotencyKey: checkoutKey,
+        items: items.map(({ product, quantity }) => ({ product_id: product.id, sku: product.sku, quantity })),
+        paymentMethod: pay.method,
+        deliveryMethod: ship.deliveryMethod,
+        customerName: `${ship.firstName} ${ship.lastName}`.trim(),
+        customerEmail: ship.email,
+        customerPhone: ship.phone,
+        shippingAddress: { address_line1:ship.address, address_line2:ship.address2, city:ship.city, state:ship.province, postal_code:ship.postalCode, country:ship.country },
+      });
+      setOrderNum(result.order_number);
+      clearCart();
+      setStep(4);
+      setCheckoutKey(createIdempotencyKey("checkout"));
+    } catch (error) {
+      setPlaceError(error instanceof Error ? error.message : "Unable to place the order.");
+    } finally { setPlacing(false); }
   };
 
   const ic = (err?: string) => `w-full bg-[#f4f4f4] border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#d4f000] transition ${err?"border-red-400":"border-gray-200"}`;
@@ -320,10 +336,13 @@ export default function CheckoutClient() {
 
               <div className="flex gap-3">
                 <button onClick={()=>setStep(2)} className="flex items-center gap-2 border-2 border-gray-200 font-bold px-5 py-3 rounded-xl hover:border-[#0d0d0d] text-sm"><ArrowLeft size={15}/>Back</button>
+                <div className="flex-1">
+                {placeError && <p role="alert" className="mb-2 text-sm font-semibold text-red-600">{placeError}</p>}
                 <button onClick={placeOrder} disabled={placing||items.length===0}
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#d4f000] text-[#0d0d0d] font-extrabold py-3.5 rounded-xl hover:bg-[#c4e000] disabled:opacity-60 text-base">
+                  className="w-full flex items-center justify-center gap-2 bg-[#d4f000] text-[#0d0d0d] font-extrabold py-3.5 rounded-xl hover:bg-[#c4e000] disabled:opacity-60 text-base">
                   {placing?<><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>Placing…</>:<><Lock size={15}/>Place Order · ${total.toFixed(2)}</>}
                 </button>
+                </div>
               </div>
             </div>
           )}

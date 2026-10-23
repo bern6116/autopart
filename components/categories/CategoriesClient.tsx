@@ -199,23 +199,19 @@ export default function CategoriesClient() {
                 href={`/categories/${cat.slug}`}
                 className="group bg-white rounded-2xl border-2 border-gray-100 overflow-hidden hover:border-[#d4f000] hover:shadow-lg transition-all duration-200 flex flex-col product-card"
               >
-                {/* Image */}
-                <div className="relative h-44 overflow-hidden bg-gray-50">
+                {/* Image — white background, object-contain so the full illustration is visible */}
+                <div className="relative h-44 overflow-hidden bg-white border-b border-gray-100">
                   <Image
                     src={cat.image}
-                    alt={cat.name}
+                    alt={`${cat.name} category illustration`}
                     fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   />
-                  {/* Dark overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                   {/* Product count pill */}
                   <div className="absolute top-3 right-3 bg-[#d4f000] text-[#0d0d0d] text-xs font-extrabold px-2.5 py-1 rounded-full">
                     {cat.productCount.toLocaleString()} parts
                   </div>
-                  {/* Icon */}
-                  <div className="absolute bottom-3 left-4 text-3xl">{cat.icon}</div>
                 </div>
 
                 {/* Content */}
@@ -269,18 +265,15 @@ export default function CategoriesClient() {
                 href={`/categories/${cat.slug}`}
                 className="group flex gap-5 bg-white rounded-2xl border-2 border-gray-100 overflow-hidden hover:border-[#d4f000] hover:shadow-md transition-all duration-200 p-4 product-card"
               >
-                {/* Thumbnail */}
-                <div className="relative w-28 sm:w-36 shrink-0 rounded-xl overflow-hidden bg-gray-50 aspect-square">
+                {/* Thumbnail — white background, object-contain */}
+                <div className="relative w-28 sm:w-36 shrink-0 rounded-xl overflow-hidden bg-white border border-gray-100 aspect-square">
                   <Image
                     src={cat.image}
-                    alt={cat.name}
+                    alt={`${cat.name} category illustration`}
                     fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="object-contain p-3 transition-transform duration-300 group-hover:scale-105"
                     sizes="144px"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center text-4xl bg-black/10">
-                    {cat.icon}
-                  </div>
                 </div>
 
                 {/* Info */}
@@ -321,32 +314,6 @@ export default function CategoriesClient() {
           })}
         </div>
       )}
-
-      {/* Bottom CTA */}
-      <div className="mt-12 bg-[#0d0d0d] rounded-2xl p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-[0.06]"
-          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #d4f000 1px, transparent 0)", backgroundSize: "24px 24px" }}
-        />
-        <div className="relative text-center sm:text-left">
-          <h3 className="text-xl font-extrabold text-white">Can&apos;t find what you need?</h3>
-          <p className="text-sm text-gray-400 mt-1">Use our Vehicle Finder to locate the exact part for your car.</p>
-        </div>
-        <div className="relative flex gap-3 shrink-0">
-          <Link
-            href="/shop"
-            className="flex items-center gap-2 bg-[#d4f000] text-[#0d0d0d] font-extrabold px-6 py-3 rounded-xl hover:bg-[#c4e000] transition-colors text-sm"
-          >
-            Browse All Parts <ArrowRight size={15} />
-          </Link>
-          <Link
-            href="/#vehicle-finder"
-            className="flex items-center gap-2 bg-white/10 border border-white/20 text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/20 transition-colors text-sm"
-          >
-            Vehicle Finder
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }

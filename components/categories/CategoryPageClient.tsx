@@ -84,13 +84,14 @@ export default function CategoryPageClient({
 
       {/* Hero banner */}
       <div className="relative rounded-2xl overflow-hidden mb-8 bg-[#0d0d0d]">
-        <div className="absolute inset-0">
+        {/* Image — contained on white strip, no opacity reduction */}
+        <div className="absolute inset-y-0 right-0 w-1/2 hidden sm:block bg-white">
           <Image
             src={category.image}
-            alt={category.name}
+            alt={`${category.name} category illustration`}
             fill
-            className="object-cover opacity-25"
-            sizes="100vw"
+            className="object-contain p-6"
+            sizes="50vw"
             priority
           />
         </div>

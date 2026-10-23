@@ -22,6 +22,7 @@ interface CartState {
 
 type CartAction =
   | { type: "ADD"; product: Product; qty?: number }
+  | { type: "ADD_MANY"; lines: Array<{ product: Product; qty: number }> }
   | { type: "REMOVE"; productId: string }
   | { type: "UPDATE_QTY"; productId: string; qty: number }
   | { type: "CLEAR" }
@@ -32,6 +33,7 @@ interface CartContextValue {
   totalItems: number;
   subtotal: number;
   addItem: (product: Product, qty?: number) => void;
+  addItems: (lines: Array<{ product: Product; qty: number }>) => void;
   removeItem: (productId: string) => void;
   updateQty: (productId: string, qty: number) => void;
   clearCart: () => void;
@@ -53,6 +55,24 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         };
       }
       return { items: [...state.items, { product: action.product, quantity: qty }] };
+    }
+    case "ADD_MANY": {
+      const nextItems = [...state.items];
+      for (const line of action.lines) {
+        const index = nextItems.findIndex((item) => item.product.id === line.product.id);
+        if (index >= 0) {
+          nextItems[index] = {
+            ...nextItems[index],
+            quantity: Math.min(nextItems[index].quantity + line.qty, line.product.stock, 10),
+          };
+        } else {
+          nextItems.push({
+            product: line.product,
+            quantity: Math.min(line.qty, line.product.stock, 10),
+          });
+        }
+      }
+      return { items: nextItems };
     }
     case "REMOVE":
       return { items: state.items.filter((i) => i.product.id !== action.productId) };
@@ -112,6 +132,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     (product: Product, qty = 1) => dispatch({ type: "ADD", product, qty }),
     []
   );
+  const addItems = useCallback(
+    (lines: Array<{ product: Product; qty: number }>) => dispatch({ type: "ADD_MANY", lines }),
+    []
+  );
   const removeItem = useCallback(
     (productId: string) => dispatch({ type: "REMOVE", productId }),
     []
@@ -127,7 +151,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items: state.items, totalItems, subtotal, addItem, removeItem, updateQty, clearCart }}
+      value={{ items: state.items, totalItems, subtotal, addItem, addItems, removeItem, updateQty, clearCart }}
     >
       {children}
     </CartContext.Provider>

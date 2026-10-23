@@ -1,13 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, SlidersHorizontal, AlertTriangle, X, Check } from "lucide-react";
 import AdminTable, { type Column } from "@/components/admin/AdminTable";
 import StatusBadge from "@/components/admin/StatusBadge";
-import { adminProducts, inventoryTransactions } from "@/lib/admin-data";
+import { supabase } from "@/lib/supabase";
+import { adjustStock, createIdempotencyKey } from "@/lib/inventory-service";
 import type { DBProduct, StockTxType } from "@/types/database";
 
 type TxForm = { product_id:string; type:StockTxType; quantity:number; notes:string };
+type Movement = { id:string; product_id:string; quantity_delta:number; stock_before:number; stock_after:number; reason:string; created_at:string };
 
 const TX_TYPES: { value: StockTxType; label: string }[] = [
   { value:"stock_in",    label:"Stock In"     },
@@ -17,27 +18,52 @@ const TX_TYPES: { value: StockTxType; label: string }[] = [
   { value:"returned",    label:"Returned"     },
 ];
 
-const TX_COLORS: Record<string, string> = {
-  stock_in:"text-green-600 bg-green-50", stock_out:"text-red-600 bg-red-50",
-  sale:"text-blue-600 bg-blue-50", purchase:"text-indigo-600 bg-indigo-50",
-  adjustment:"text-orange-600 bg-orange-50", damaged:"text-red-700 bg-red-100",
-  returned:"text-purple-600 bg-purple-50",
-};
-
 export default function AdminInventoryClient() {
-  const [products, setProducts] = useState<DBProduct[]>(adminProducts as DBProduct[]);
+  const [products, setProducts] = useState<DBProduct[]>([]);
+  const [movements, setMovements] = useState<Movement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [lowOnly, setLowOnly] = useState(false);
   const [txModal, setTxModal] = useState(false);
   const [tab, setTab] = useState<"stock"|"transactions">("stock");
   const [txForm, setTxForm] = useState<TxForm>({ product_id:"", type:"stock_in", quantity:1, notes:"" });
   const [saved, setSaved] = useState(false);
 
+  const loadInventory = async (initial = false) => {
+    if (!initial) setLoading(true);
+    const [productResult, movementResult] = await Promise.all([
+      supabase.rpc("admin_inventory_products"),
+      supabase.from("stock_movements").select("id,product_id,quantity_delta,stock_before,stock_after,reason,created_at").order("created_at", { ascending:false }).limit(200),
+    ]);
+    setError(productResult.error?.message ?? "");
+    if (!productResult.error) setProducts((productResult.data ?? []) as DBProduct[]);
+    if (!movementResult.error) setMovements((movementResult.data ?? []) as Movement[]);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    void Promise.all([
+      supabase.rpc("admin_inventory_products"),
+      supabase.from("stock_movements").select("id,product_id,quantity_delta,stock_before,stock_after,reason,created_at").order("created_at", { ascending:false }).limit(200),
+    ]).then(([productResult, movementResult]) => {
+      setError(productResult.error?.message ?? "");
+      if (!productResult.error) setProducts((productResult.data ?? []) as DBProduct[]);
+      if (!movementResult.error) setMovements((movementResult.data ?? []) as Movement[]);
+      setLoading(false);
+    });
+  }, []);
+
   const lowStock = products.filter(p => p.stock_quantity <= p.reorder_level && p.stock_quantity > 0).length;
   const outOfStock = products.filter(p => p.stock_quantity === 0).length;
 
-  const handleTx = () => {
+  const handleTx = async () => {
     const qty = txForm.type === "stock_out" || txForm.type === "damaged" ? -txForm.quantity : txForm.quantity;
-    setProducts(prev => prev.map(p => p.id === txForm.product_id ? { ...p, stock_quantity: Math.max(0, p.stock_quantity + qty) } : p));
-    setSaved(true); setTimeout(() => { setSaved(false); setTxModal(false); }, 1200);
+    setError("");
+    try {
+      await adjustStock({ productId:txForm.product_id, quantityDelta:qty, reason:txForm.notes, idempotencyKey:createIdempotencyKey("adjust") });
+      await loadInventory();
+      setSaved(true); setTimeout(() => { setSaved(false); setTxModal(false); }, 900);
+    } catch (e) { setError(e instanceof Error ? e.message : "Stock adjustment failed"); }
   };
 
   const cols: Column[] = [
@@ -57,12 +83,11 @@ export default function AdminInventoryClient() {
 
   const txCols: Column[] = [
     { key:"id", label:"ID", render:(r) => <span className="font-mono text-xs text-gray-500">{String(r.id).slice(0,6)}</span> },
-    { key:"product_id", label:"Product", render:(r) => { const p = adminProducts.find(p=>p.id===r.product_id); return <div><div className="text-xs font-bold">{p?.name??String(r.product_id)}</div><div className="text-[10px] text-gray-400 font-mono">{p?.sku}</div></div>; } },
-    { key:"type", label:"Type", render:(r) => <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${TX_COLORS[String(r.type)]??""}`}>{String(r.type).replace("_"," ")}</span> },
-    { key:"quantity", label:"Qty", render:(r) => <span className={`font-extrabold ${Number(r.quantity)<0?"text-red-600":"text-green-600"}`}>{Number(r.quantity)>0?"+":""}{String(r.quantity)}</span> },
-    { key:"previous_stock", label:"Before", render:(r) => <span className="text-xs text-gray-500">{String(r.previous_stock)}</span> },
-    { key:"new_stock", label:"After", render:(r) => <span className="text-xs font-bold text-[#0d0d0d]">{String(r.new_stock)}</span> },
-    { key:"notes", label:"Notes", render:(r) => <span className="text-xs text-gray-500">{String(r.notes)}</span> },
+    { key:"product_id", label:"Product", render:(r) => { const p = products.find(p=>p.id===r.product_id); return <div><div className="text-xs font-bold">{p?.name??String(r.product_id)}</div><div className="text-[10px] text-gray-400 font-mono">{p?.sku}</div></div>; } },
+    { key:"quantity_delta", label:"Qty", render:(r) => <span className={`font-extrabold ${Number(r.quantity_delta)<0?"text-red-600":"text-green-600"}`}>{Number(r.quantity_delta)>0?"+":""}{String(r.quantity_delta)}</span> },
+    { key:"stock_before", label:"Before", render:(r) => <span className="text-xs text-gray-500">{String(r.stock_before)}</span> },
+    { key:"stock_after", label:"After", render:(r) => <span className="text-xs font-bold text-[#0d0d0d]">{String(r.stock_after)}</span> },
+    { key:"reason", label:"Reason", render:(r) => <span className="text-xs text-gray-500">{String(r.reason)}</span> },
     { key:"created_at", label:"Date", render:(r) => <span className="text-xs text-gray-400">{new Date(String(r.created_at)).toLocaleDateString()}</span> },
   ];
 
@@ -76,6 +101,7 @@ export default function AdminInventoryClient() {
           <SlidersHorizontal size={15}/>Stock Adjustment
         </button>
       </div>
+      {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -104,9 +130,10 @@ export default function AdminInventoryClient() {
           </button>
         ))}
       </div>
+      <button onClick={()=>setLowOnly(v=>!v)} className={`text-xs font-bold px-3 py-2 rounded-xl border ${lowOnly?"bg-orange-50 border-orange-300 text-orange-700":"bg-white border-gray-200 text-gray-600"}`}>Low stock only</button>
 
       {tab==="stock" && (
-        <AdminTable data={products} columns={cols} searchKeys={["name","sku"]}
+        loading ? <div className="py-12 text-center text-sm text-gray-500">Loading inventory…</div> : <AdminTable data={lowOnly?products.filter(p=>p.stock_quantity<=p.reorder_level):products} columns={cols} searchKeys={["name","sku"]}
           actions={(row) => {
             const p = row as unknown as DBProduct;
             return (
@@ -117,7 +144,7 @@ export default function AdminInventoryClient() {
         />
       )}
       {tab==="transactions" && (
-        <AdminTable data={inventoryTransactions} columns={txCols} searchKeys={["notes"]} pageSize={8} />
+        <AdminTable data={movements} columns={txCols} searchKeys={["reason"]} pageSize={8} />
       )}
 
       {/* Stock Adjustment Modal */}
@@ -134,7 +161,7 @@ export default function AdminInventoryClient() {
                 <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Product</label>
                 <select value={txForm.product_id} onChange={e=>setTxForm(f=>({...f,product_id:e.target.value}))} className={`${inputCls} appearance-none`}>
                   <option value="">Select product…</option>
-                  {adminProducts.map(p=><option key={p.id} value={p.id}>{p.name} (Stock: {p.stock_quantity})</option>)}
+                  {products.map(p=><option key={p.id} value={p.id}>{p.name} (Stock: {p.stock_quantity})</option>)}
                 </select>
               </div>
               <div>
@@ -154,12 +181,12 @@ export default function AdminInventoryClient() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Notes</label>
-                <textarea rows={2} value={txForm.notes} onChange={e=>setTxForm(f=>({...f,notes:e.target.value}))} className={`${inputCls} resize-none`} placeholder="Optional notes…"/>
+                <textarea rows={2} value={txForm.notes} onChange={e=>setTxForm(f=>({...f,notes:e.target.value}))} className={`${inputCls} resize-none`} placeholder="Required reason…"/>
               </div>
             </div>
             <div className="flex gap-3 px-6 pb-5">
               <button onClick={()=>setTxModal(false)} className="flex-1 border-2 border-gray-200 font-bold py-2.5 rounded-xl text-sm">Cancel</button>
-              <button onClick={handleTx} disabled={!txForm.product_id} className="flex-1 bg-[#d4f000] text-[#0d0d0d] font-extrabold py-2.5 rounded-xl text-sm disabled:opacity-50">Save Transaction</button>
+              <button onClick={handleTx} disabled={!txForm.product_id || txForm.notes.trim().length<3} className="flex-1 bg-[#d4f000] text-[#0d0d0d] font-extrabold py-2.5 rounded-xl text-sm disabled:opacity-50">Save Transaction</button>
             </div>
           </div>
         </div>

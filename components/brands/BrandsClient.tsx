@@ -1,170 +1,136 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, ChevronRight, ArrowRight, Star } from "lucide-react";
-import { brands, products } from "@/lib/data";
+import { AlertCircle, ArrowRight, ChevronRight, Search } from "lucide-react";
+import { clearCatalogCache, loadHomeCatalog, type HomeCatalog } from "@/lib/homeCatalog";
 
-const BRAND_COLORS: Record<string, string> = {
-  "bosch":   "hover:border-red-400",
-  "acdelco": "hover:border-blue-400",
-  "denso":   "hover:border-blue-500",
-  "monroe":  "hover:border-yellow-400",
-  "brembo":  "hover:border-red-500",
-  "kn":      "hover:border-red-400",
-  "ngk":     "hover:border-gray-600",
-  "moog":    "hover:border-blue-600",
-};
-
-const BRAND_DESCRIPTIONS: Record<string, { country: string; founded: string; specialty: string; highlight: string }> = {
-  "bosch":   { country: "Germany", founded: "1886", specialty: "Electrical & Engine",   highlight: "World's largest auto parts supplier" },
-  "acdelco": { country: "USA",     founded: "1916", specialty: "OEM Replacement",       highlight: "Official GM parts brand" },
-  "denso":   { country: "Japan",   founded: "1949", specialty: "Engine & Electrical",   highlight: "Toyota's primary OEM supplier" },
-  "monroe":  { country: "USA",     founded: "1916", specialty: "Suspension & Ride",     highlight: "#1 shock absorber brand in North America" },
-  "brembo":  { country: "Italy",   founded: "1961", specialty: "Braking Systems",       highlight: "Trusted by F1 teams worldwide" },
-  "kn":      { country: "USA",     founded: "1969", specialty: "Air Filtration",        highlight: "Pioneered washable performance filters" },
-  "ngk":     { country: "Japan",   founded: "1936", specialty: "Spark Plugs & Sensors", highlight: "Supplies 70% of the world's spark plugs" },
-  "moog":    { country: "USA",     founded: "1919", specialty: "Chassis & Steering",    highlight: "Problem Solver® technology" },
-};
+function BrandLogo({ url, name }: { url: string | null; name: string }) {
+  if (!url) return <span className="text-xl font-black tracking-tight text-[#0d0d0d]">{name}</span>;
+  // Brand logo URLs are administrator-approved database values. A normal image
+  // avoids requiring every possible manufacturer host in next.config.ts.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt={`${name} logo`} className="max-h-12 max-w-full object-contain" />;
+}
 
 export default function BrandsClient() {
   const [search, setSearch] = useState("");
+  const [catalog, setCatalog] = useState<HomeCatalog | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filtered = brands.filter(
-    (b) =>
-      b.name.toLowerCase().includes(search.toLowerCase()) ||
-      b.description.toLowerCase().includes(search.toLowerCase())
+  const load = useCallback(async (fresh = false) => {
+    setLoading(true);
+    setError("");
+    if (fresh) clearCatalogCache();
+    try {
+      setCatalog(await loadHomeCatalog());
+    } catch {
+      setCatalog(null);
+      setError("We couldn’t load parts brands. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    loadHomeCatalog()
+      .then((result) => { if (active) setCatalog(result); })
+      .catch(() => {
+        if (active) {
+          setCatalog(null);
+          setError("We couldn’t load parts brands. Please try again.");
+        }
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const brands = useMemo(() => {
+    if (!catalog) return [];
+    const productIds = new Map<string, Set<string>>();
+    for (const product of catalog.products) {
+      if (!product.brandId) continue;
+      const ids = productIds.get(product.brandId) ?? new Set<string>();
+      ids.add(product.id);
+      productIds.set(product.brandId, ids);
+    }
+    return catalog.brands
+      .map((brand) => ({ ...brand, productCount: productIds.get(brand.id)?.size ?? 0 }))
+      .filter((brand) => brand.productCount > 0);
+  }, [catalog]);
+
+  const query = search.trim().toLocaleLowerCase();
+  const filtered = useMemo(
+    () => brands.filter((brand) => brand.name.trim().toLocaleLowerCase().includes(query)),
+    [brands, query]
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-6">
-        <Link href="/" className="hover:text-[#0d0d0d] transition-colors">Home</Link>
-        <ChevronRight size={12} className="text-gray-300" />
-        <span className="text-[#0d0d0d] font-semibold">Brands</span>
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-1.5 text-xs text-gray-400">
+        <Link href="/" className="transition-colors hover:text-[#0d0d0d]">Home</Link>
+        <ChevronRight size={12} className="text-gray-300" aria-hidden="true" />
+        <span className="font-semibold text-[#0d0d0d]">Parts Brands</span>
       </nav>
 
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="w-8 h-1 bg-[#d4f000] rounded-full inline-block" />
-          <span className="text-xs font-bold uppercase tracking-widest text-[#0d0d0d]">Trusted</span>
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0d0d0d]">Shop by Brand</h1>
-            <p className="text-sm text-gray-500 mt-1">{brands.length} top automotive brands — all genuine, all verified.</p>
-          </div>
-          <div className="relative shrink-0">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search brands…"
-              className="bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#d4f000] w-52"
-            />
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
-      </div>
-
-      {/* Featured brands — large cards */}
-      <div className="mb-10">
-        <h2 className="text-lg font-extrabold text-[#0d0d0d] mb-4">Featured Brands</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {filtered.filter((b) => b.isFeatured).map((brand) => {
-            const info = BRAND_DESCRIPTIONS[brand.slug];
-            const brandProducts = products.filter((p) => p.brand === brand.name);
-            const avgRating = brandProducts.length
-              ? brandProducts.reduce((s, p) => s + p.rating, 0) / brandProducts.length
-              : 4.7;
-            return (
-              <Link
-                key={brand.id}
-                href={`/shop?brand=${encodeURIComponent(brand.name)}`}
-                className={`group bg-white border-2 border-gray-100 ${BRAND_COLORS[brand.slug] ?? "hover:border-[#d4f000]"} rounded-2xl p-5 flex flex-col gap-3 hover:shadow-md transition-all duration-200 product-card`}
-              >
-                {/* Logo / Name */}
-                <div className="h-14 flex items-center justify-center bg-[#f9f9f9] rounded-xl px-4">
-                  <span className="font-black text-xl text-[#0d0d0d] tracking-tight">{brand.name}</span>
-                </div>
-
-                {/* Info */}
-                <div className="flex-1">
-                  <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{brand.description}</p>
-                </div>
-
-                {/* Stats */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-semibold bg-[#f4f4f4] text-gray-600 px-2 py-0.5 rounded-full">
-                    {info?.country ?? "International"}
-                  </span>
-                  <span className="text-[10px] font-semibold bg-[#f4f4f4] text-gray-600 px-2 py-0.5 rounded-full">
-                    Est. {info?.founded ?? "—"}
-                  </span>
-                </div>
-
-                {info?.highlight && (
-                  <div className="text-[10px] text-gray-400 italic border-t border-gray-100 pt-2">
-                    &ldquo;{info.highlight}&rdquo;
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between pt-1 border-t border-gray-100">
-                  <div className="flex items-center gap-1">
-                    <Star size={11} className="text-yellow-400 fill-yellow-400" />
-                    <span className="text-xs font-bold text-gray-600">{avgRating.toFixed(1)}</span>
-                    <span className="text-[10px] text-gray-400">
-                      · {brand.productCount.toLocaleString()} parts
-                    </span>
-                  </div>
-                  <ArrowRight size={14} className="text-gray-300 group-hover:text-[#d4f000] transition-colors" />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* All brands — compact grid */}
-      {filtered.filter((b) => !b.isFeatured).length > 0 && (
+      <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h2 className="text-lg font-extrabold text-[#0d0d0d] mb-4">All Brands</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {filtered.filter((b) => !b.isFeatured).map((brand) => (
-              <Link
-                key={brand.id}
-                href={`/shop?brand=${encodeURIComponent(brand.name)}`}
-                className="group flex flex-col items-center gap-2 p-4 bg-white border-2 border-gray-100 rounded-2xl hover:border-[#d4f000] hover:shadow-sm transition-all"
-              >
-                <span className="font-extrabold text-[#0d0d0d] text-sm text-center">{brand.name}</span>
-                <span className="text-[10px] text-gray-400">{brand.productCount.toLocaleString()} parts</span>
-              </Link>
-            ))}
-          </div>
+          <h1 className="text-3xl font-extrabold text-[#0d0d0d] sm:text-4xl">Parts Brands</h1>
+          <p className="mt-1 text-sm text-gray-500">Browse manufacturers represented by products currently available in the AutoCore catalog.</p>
         </div>
-      )}
-
-      {/* No results */}
-      {filtered.length === 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center">
-          <p className="font-bold text-[#0d0d0d]">No brands match &ldquo;{search}&rdquo;</p>
-          <button onClick={() => setSearch("")} className="mt-3 text-sm text-gray-400 underline">Clear search</button>
-        </div>
-      )}
-
-      {/* Bottom CTA */}
-      <div className="mt-12 bg-[#0d0d0d] rounded-2xl p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #d4f000 1px, transparent 0)", backgroundSize: "24px 24px" }} />
-        <div className="relative text-center sm:text-left">
-          <h3 className="text-xl font-extrabold text-white">Can&apos;t find your brand?</h3>
-          <p className="text-sm text-gray-400 mt-1">We carry 200+ brands. Browse our full catalogue.</p>
-        </div>
-        <Link href="/shop" className="relative flex items-center gap-2 bg-[#d4f000] text-[#0d0d0d] font-extrabold px-6 py-3 rounded-xl hover:bg-[#c4e000] transition-colors shrink-0 text-sm">
-          Shop All Parts <ArrowRight size={15} />
-        </Link>
+        <label className="relative shrink-0">
+          <span className="sr-only">Search parts brands</span>
+          <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search parts brands…" className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#d4f000] sm:w-64" />
+          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+        </label>
       </div>
+
+      {loading && (
+        <div role="status" aria-label="Loading parts brands" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 8 }, (_, index) => (
+            <div key={index} className="h-44 animate-pulse rounded-2xl border border-gray-200 bg-white p-5">
+              <div className="h-14 rounded-xl bg-gray-100" />
+              <div className="mt-5 h-3 w-2/3 rounded bg-gray-100" />
+              <div className="mt-3 h-3 w-1/3 rounded bg-gray-100" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && error && (
+        <div role="alert" className="flex flex-col items-center rounded-2xl border border-red-200 bg-red-50 px-5 py-12 text-center">
+          <AlertCircle size={22} className="text-red-600" aria-hidden="true" />
+          <p className="mt-2 text-sm font-semibold text-red-700">{error}</p>
+          <button type="button" onClick={() => void load(true)} className="mt-4 rounded-xl bg-[#d4f000] px-5 py-2.5 text-sm font-extrabold text-[#0d0d0d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0d0d0d]">Retry</button>
+        </div>
+      )}
+
+      {!loading && !error && brands.length === 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white py-16 text-center"><p className="font-bold text-[#0d0d0d]">No parts brands available yet</p></div>
+      )}
+
+      {!loading && !error && brands.length > 0 && filtered.length === 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white py-16 text-center">
+          <p className="font-bold text-[#0d0d0d]">No brands match your search</p>
+          <button type="button" onClick={() => setSearch("")} className="mt-3 text-sm font-semibold text-gray-500 underline underline-offset-2 hover:text-[#0d0d0d]">Clear search</button>
+        </div>
+      )}
+
+      {!loading && !error && filtered.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {filtered.map((brand) => (
+            <Link key={brand.id} href={`/shop?brand=${encodeURIComponent(brand.slug)}`} aria-label={`Shop ${brand.name} parts (${brand.productCount} ${brand.productCount === 1 ? "product" : "products"})`} className="group flex min-h-44 flex-col rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-gray-400 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d4f000]">
+              <div className="flex h-16 items-center justify-center rounded-xl bg-[#f7f7f7] px-4"><BrandLogo url={brand.logo_url} name={brand.name} /></div>
+              <div className="mt-auto flex items-end justify-between border-t border-gray-100 pt-4">
+                <div><p className="font-extrabold text-[#0d0d0d]">{brand.name}</p><p className="mt-0.5 text-xs text-gray-500">{brand.productCount} {brand.productCount === 1 ? "product" : "products"}</p></div>
+                <ArrowRight size={16} className="text-gray-400 transition-colors group-hover:text-[#0d0d0d]" aria-hidden="true" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

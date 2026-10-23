@@ -33,11 +33,14 @@ export default function CountdownTimer({ endsAt, className = "" }: CountdownTime
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
 
   useEffect(() => {
-    // Set the real value immediately on mount (client only)
-    setTimeLeft(getTimeLeft(endsAt));
+    // Defer the first update so the server and hydration render stay identical.
+    const initialTimer = setTimeout(() => setTimeLeft(getTimeLeft(endsAt)), 0);
 
     const timer = setInterval(() => setTimeLeft(getTimeLeft(endsAt)), 1000);
-    return () => clearInterval(timer);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(timer);
+    };
   }, [endsAt]);
 
   // Render an equal-height placeholder on the server / before hydration

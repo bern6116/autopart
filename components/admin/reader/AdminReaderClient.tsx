@@ -110,11 +110,22 @@ export default function AdminReaderClient() {
 
   // ── Scanner: callback called when barcode is detected ─────
   const handleDetect = useCallback((code: string) => { lookup(code); }, [lookup]);
-  const scanner = useBarcodeScanner(handleDetect);
+  const {
+    videoRef,
+    status: scannerStatus,
+    lastCode,
+    errorMessage: scannerErrorMessage,
+    facingMode,
+    startScanner,
+    stopScanner,
+    switchCamera,
+    resetDetected,
+  } = useBarcodeScanner(handleDetect);
 
   // Record to history when lookup resolves
   useEffect(() => {
     if (lookupStatus === "found" && result) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- record completion of the external lookup
       addHistory(
         result.product.sku, "BARCODE", result.product, "found",
         result.brandName, currentStock
@@ -247,12 +258,12 @@ export default function AdminReaderClient() {
     return <span className="bg-green-100 text-green-700 text-[10px] font-extrabold px-2.5 py-1 rounded-full">IN STOCK</span>;
   };
 
-  const SCANNER_LABEL: Record<typeof scanner.status, string> = {
+  const SCANNER_LABEL: Record<typeof scannerStatus, string> = {
     idle:"Camera Off", requesting:"Starting…", ready:"Camera Ready",
     scanning:"Scanning…", detected:"Barcode Detected!", error:"Error",
     denied:"Permission Denied", unavailable:"Camera Unavailable",
   };
-  const SCANNER_DOT: Record<typeof scanner.status, string> = {
+  const SCANNER_DOT: Record<typeof scannerStatus, string> = {
     idle:"bg-gray-400", requesting:"bg-yellow-400 animate-pulse",
     ready:"bg-green-500", scanning:"bg-blue-500 animate-pulse",
     detected:"bg-[#d4f000] animate-pulse", error:"bg-red-500",
@@ -304,21 +315,21 @@ export default function AdminReaderClient() {
               <p className="text-xs text-gray-400">Position the barcode inside the scanning area.</p>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${SCANNER_DOT[scanner.status]}`}/>
-              <span className="text-xs font-bold text-gray-600">{SCANNER_LABEL[scanner.status]}</span>
+              <span className={`w-2 h-2 rounded-full ${SCANNER_DOT[scannerStatus]}`}/>
+              <span className="text-xs font-bold text-gray-600">{SCANNER_LABEL[scannerStatus]}</span>
             </div>
           </div>
 
           {/* Camera area */}
           <div className="relative bg-[#111] overflow-hidden" style={{ aspectRatio:"16/9" }}>
-            <video ref={scanner.videoRef} muted playsInline
+            <video ref={videoRef} muted playsInline
               className={`w-full h-full object-cover transition-opacity ${
-                scanner.status === "scanning" || scanner.status === "detected" ? "opacity-100" : "opacity-0"
+                scannerStatus === "scanning" || scannerStatus === "detected" ? "opacity-100" : "opacity-0"
               }`}
             />
 
             {/* Scanning frame overlay */}
-            {(scanner.status === "scanning" || scanner.status === "detected") && (
+            {(scannerStatus === "scanning" || scannerStatus === "detected") && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="relative" style={{ width: 240, height: 130 }}>
                   {/* Corner brackets */}
@@ -329,13 +340,13 @@ export default function AdminReaderClient() {
                     "bottom-0 right-0 border-b-[3px] border-r-[3px]",
                   ].map((cls, i) => (
                     <div key={i} className={`absolute w-5 h-5 ${cls} ${
-                      scanner.status === "detected" ? "border-[#d4f000]" : "border-white"
+                      scannerStatus === "detected" ? "border-[#d4f000]" : "border-white"
                     } transition-colors duration-300`}/>
                   ))}
                   {/* Scan line */}
-                  {scanner.status === "scanning" && <div className="scanline"/>}
+                  {scannerStatus === "scanning" && <div className="scanline"/>}
                   {/* Detected badge */}
-                  {scanner.status === "detected" && (
+                  {scannerStatus === "detected" && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="flex items-center gap-1.5 bg-[#d4f000] px-3 py-1.5 rounded-xl shadow-lg">
                         <CheckCircle size={14} className="text-[#0d0d0d]"/>
@@ -348,14 +359,14 @@ export default function AdminReaderClient() {
             )}
 
             {/* Idle overlay */}
-            {scanner.status === "idle" && (
+            {scannerStatus === "idle" && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                 <ScanLine size={40} className="text-gray-600"/>
                 <p className="text-gray-500 text-sm">Camera is off</p>
               </div>
             )}
             {/* Requesting overlay */}
-            {scanner.status === "requesting" && (
+            {scannerStatus === "requesting" && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                 <svg className="animate-spin h-8 w-8 text-[#d4f000]" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
@@ -365,17 +376,17 @@ export default function AdminReaderClient() {
               </div>
             )}
             {/* Error/denied overlay */}
-            {(scanner.status === "denied" || scanner.status === "unavailable" || scanner.status === "error") && (
+            {(scannerStatus === "denied" || scannerStatus === "unavailable" || scannerStatus === "error") && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center">
                 <CameraOff size={36} className="text-red-400"/>
                 <div>
                   <p className="text-white font-extrabold text-sm">
-                    {scanner.status === "denied" ? "Camera Access Required" : "Camera Unavailable"}
+                    {scannerStatus === "denied" ? "Camera Access Required" : "Camera Unavailable"}
                   </p>
-                  <p className="text-gray-500 text-xs mt-1 max-w-xs">{scanner.errorMessage}</p>
+                  <p className="text-gray-500 text-xs mt-1 max-w-xs">{scannerErrorMessage}</p>
                 </div>
                 <div className="flex flex-wrap gap-2 justify-center">
-                  <button onClick={scanner.startScanner}
+                  <button onClick={startScanner}
                     className="flex items-center gap-1.5 bg-[#d4f000] text-[#0d0d0d] font-bold px-4 py-2 rounded-xl text-xs">
                     <RefreshCw size={12}/>Try Again
                   </button>
@@ -391,19 +402,19 @@ export default function AdminReaderClient() {
           {/* Controls */}
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-2 gap-2">
-              {scanner.status === "idle" || scanner.status === "denied" ||
-               scanner.status === "error" || scanner.status === "unavailable" ? (
-                <button onClick={scanner.startScanner}
+              {scannerStatus === "idle" || scannerStatus === "denied" ||
+               scannerStatus === "error" || scannerStatus === "unavailable" ? (
+                <button onClick={startScanner}
                   className="col-span-2 flex items-center justify-center gap-2 bg-[#d4f000] text-[#0d0d0d] font-extrabold py-3 rounded-xl hover:bg-[#c4e000] transition-colors">
                   <Camera size={16}/>Start Scanner
                 </button>
               ) : (
-                <button onClick={scanner.stopScanner}
+                <button onClick={stopScanner}
                   className="col-span-2 flex items-center justify-center gap-2 bg-[#0d0d0d] text-white font-extrabold py-3 rounded-xl hover:bg-[#1a1a1a] transition-colors">
                   <CameraOff size={16}/>Stop Scanner
                 </button>
               )}
-              <button onClick={scanner.switchCamera}
+              <button onClick={switchCamera}
                 className="flex items-center justify-center gap-1.5 bg-[#f4f4f4] text-[#0d0d0d] font-bold py-2.5 rounded-xl hover:bg-gray-200 text-sm transition-colors">
                 <RotateCcw size={14}/>Switch Camera
               </button>
@@ -415,12 +426,12 @@ export default function AdminReaderClient() {
             </div>
 
             {/* Last detected code */}
-            {scanner.lastCode && (
+            {lastCode && (
               <div className="flex items-center gap-2 bg-[#d4f000]/10 border border-[#d4f000]/30 rounded-xl px-3 py-2">
                 <CheckCircle size={13} className="text-[#0d0d0d] shrink-0"/>
                 <span className="text-xs font-bold text-[#0d0d0d]">Last scan:</span>
-                <span className="text-xs font-mono font-extrabold text-[#0d0d0d] flex-1 truncate">{scanner.lastCode}</span>
-                <button onClick={() => { scanner.resetDetected(); resetLookup(); }}
+                <span className="text-xs font-mono font-extrabold text-[#0d0d0d] flex-1 truncate">{lastCode}</span>
+                <button onClick={() => { resetDetected(); resetLookup(); }}
                   className="text-gray-400 hover:text-gray-600 shrink-0"><X size={12}/></button>
               </div>
             )}

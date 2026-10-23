@@ -12,12 +12,13 @@ import ProductCard from "@/components/sections/ProductCard";
 import StarRating from "@/components/ui/StarRating";
 import Badge from "@/components/ui/Badge";
 
-import { products } from "@/lib/data";
+import { loadHomeCatalog } from "@/lib/homeCatalog";
 import { getReviews } from "@/lib/reviews";
+import VehicleCompatibilityStatus from "@/components/product/VehicleCompatibilityStatus";
 
 // ── Static params — pre-render all 12 product slugs ──────────
 export async function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
+  return [];
 }
 
 // ── Metadata ─────────────────────────────────────────────────
@@ -27,7 +28,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = products.find((p) => p.slug === slug);
+  const product = (await loadHomeCatalog()).products.find((p) => p.slug === slug);
   if (!product) return { title: "Product Not Found" };
   return {
     title: product.name,
@@ -47,6 +48,7 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const products = (await loadHomeCatalog()).products;
   const product = products.find((p) => p.slug === slug);
   if (!product) notFound();
 
@@ -151,6 +153,7 @@ export default async function ProductPage({
                 <p className="text-sm text-gray-600 leading-relaxed mb-5">
                   {product.shortDescription}
                 </p>
+                <div className="mb-5"><VehicleCompatibilityStatus fitments={product.compatibility}/></div>
 
                 {/* Actions (qty, cart, buy, wishlist) */}
                 <ProductActions product={product} />

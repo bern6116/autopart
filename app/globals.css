@@ -35,7 +35,16 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  /* scroll-behavior is set via JS / Tailwind scroll-smooth utility on
+     individual elements. Setting it on <html> triggers a Next.js 16
+     data-scroll-behavior warning. Smooth scrolling for anchor links is
+     handled by the .scroll-smooth utility class instead. */
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {

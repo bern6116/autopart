@@ -219,6 +219,7 @@ export default function ProductTabs({ product, reviews }: ProductTabsProps) {
                 <span>Year Range</span>
                 <span>Engine / Notes</span>
               </div>
+              {product.compatibility.length===0&&<p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Compatibility not verified. This product has no confirmed Honda fitment record.</p>}
               {product.compatibility.map((c, i) => (
                 <div
                   key={i}

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -7,6 +7,8 @@ import {
   Truck, Users, ShoppingCart, BarChart2, Settings, UserCog,
   Menu, X, ChevronRight, Bell, Search, LogOut, Building2, ScanLine,
 } from "lucide-react";
+import BrandLogo from "@/components/ui/BrandLogo";
+import { useAuth } from "@/lib/auth-context";
 
 const NAV = [
   { href: "/admin/dashboard",  icon: LayoutDashboard, label: "Dashboard" },
@@ -28,21 +30,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const {profile,loading,error,signOut}=useAuth();
 
-  const handleLogout = () => {
-    document.cookie = "admin_auth=; path=/; max-age=0";
-    router.push("/admin/login");
+  const handleLogout = async () => {
+    try { await signOut(); router.replace("/login"); router.refresh(); } catch { router.replace("/login?error=signout"); }
   };
 
   const pageTitle = NAV.find((n) => pathname.startsWith(n.href))?.label ?? "Admin";
 
+  // Redirect unauthenticated / failed-profile users to the shared login.
+  // This effect must be called BEFORE any early return so hook order
+  // stays stable across all renders (Rules of Hooks).
+  useEffect(() => {
+    if (pathname === "/admin/login") return;
+    if (loading) return;
+    if (!profile || error) {
+      router.replace("/login");
+    }
+  }, [pathname, loading, profile, error, router]);
+
+  // Don't render admin chrome on the login page
+  if(pathname==="/admin/login")return <>{children}</>;
+
+  if(loading)return <div className="flex min-h-screen items-center justify-center bg-[#0d0d0d] text-sm text-white">Verifying staff access…</div>;
+
+  // Unauthenticated or profile lookup failed → show redirecting screen
+  // (useEffect above handles the actual redirect)
+  if(!profile||error)return <div className="flex min-h-screen items-center justify-center bg-[#0d0d0d] text-sm text-white">Redirecting to login…</div>;
+
+  // Authenticated but not authorized (inactive or wrong role) → block
+  if(!profile.is_active||profile.role!=="super_admin")return <div className="flex min-h-screen items-center justify-center bg-[#0d0d0d] p-6 text-center text-white"><div><h1 className="text-xl font-extrabold">Admin access unavailable</h1><p className="mt-2 text-sm text-gray-400">{!profile.is_active?"This account is inactive.":"This account is not authorized for the admin area."}</p><Link href="/" className="mt-4 inline-block text-[#d4f000]">Return to storefront</Link></div></div>;
+
   const sidebar = (
     <aside className="flex flex-col h-full bg-[#0d0d0d] w-64 shrink-0">
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-white/10">
-        <div className="w-9 h-9 bg-[#d4f000] rounded-xl flex items-center justify-center shrink-0">
-          <span className="font-black text-[#0d0d0d] text-base">AC</span>
-        </div>
+      {/* Logo — links to /admin/dashboard */}
+      <Link href="/admin/dashboard" className="flex items-center gap-2.5 px-5 py-5 border-b border-white/10">
+        <BrandLogo size="admin" alt="Auto Core" />
         <div>
           <div className="font-black text-white text-sm leading-none">AUTO CORE</div>
           <div className="text-[9px] text-gray-600 uppercase tracking-widest mt-0.5">Admin Panel</div>
@@ -50,7 +73,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <button className="ml-auto lg:hidden text-gray-500 hover:text-white" onClick={() => setSidebarOpen(false)}>
           <X size={18} />
         </button>
-      </div>
+      </Link>
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
@@ -117,9 +140,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
             <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
               <div className="w-7 h-7 bg-[#d4f000] rounded-full flex items-center justify-center">
-                <span className="font-black text-[#0d0d0d] text-xs">D</span>
+                <span className="font-black text-[#0d0d0d] text-xs">{profile.first_name?.[0]??"A"}</span>
               </div>
-              <span className="hidden sm:block text-xs font-bold text-gray-700">Admin</span>
+              <span className="hidden sm:block text-xs font-bold text-gray-700">{profile.first_name||"Administrator"}</span>
             </div>
           </div>
         </header>

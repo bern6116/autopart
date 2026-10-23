@@ -7,6 +7,8 @@ export interface Product {
   name: string;
   slug: string;
   brand: string;
+  brandId?: string;
+  brandSlug?: string;
   sku: string;
   category: string;
   subcategory?: string;
@@ -17,9 +19,11 @@ export interface Product {
   discountPercent?: number;
   images: string[];
   thumbnail: string;
+  imageIsIllustrative?: boolean;
   rating: number;
   reviewCount: number;
   stock: number;
+  reorderLevel?: number;
   stockStatus: "in_stock" | "low_stock" | "out_of_stock";
   tags: string[];
   compatibility: VehicleCompatibility[];
@@ -101,6 +105,15 @@ export interface VehicleFilter {
   type: string;
 }
 
+export interface SavedVehicle {
+  make: "Honda";
+  makeId: string;
+  model: string;
+  modelId: string;
+  year: string;
+  engine?: string;
+}
+
 export interface DealProduct {
   product: Product;
   dealPrice: number;
@@ -138,49 +151,5 @@ export interface BannerSlide {
   image: string;
   badge?: string;
 }
-
-// Vehicle selector data
-export const VEHICLE_MAKES = [
-  "Toyota",
-  "Honda",
-  "Ford",
-  "Chevrolet",
-  "BMW",
-  "Mercedes-Benz",
-  "Audi",
-  "Volkswagen",
-  "Nissan",
-  "Hyundai",
-  "Kia",
-  "Subaru",
-  "Mazda",
-  "Jeep",
-  "Ram",
-  "GMC",
-  "Dodge",
-  "Chrysler",
-  "Lexus",
-  "Infiniti",
-  "Acura",
-  "Volvo",
-  "Porsche",
-  "Land Rover",
-  "Tesla",
-] as const;
-
-export const VEHICLE_MODELS: Record<string, string[]> = {
-  Toyota: ["Camry", "Corolla", "RAV4", "Tacoma", "Tundra", "4Runner", "Highlander", "Prius", "Sienna", "Avalon"],
-  Honda: ["Civic", "Accord", "CR-V", "Pilot", "Ridgeline", "Odyssey", "HR-V", "Passport", "Fit", "Insight"],
-  Ford: ["F-150", "Mustang", "Explorer", "Escape", "Edge", "Bronco", "Ranger", "Expedition", "Maverick", "Focus"],
-  Chevrolet: ["Silverado", "Equinox", "Tahoe", "Traverse", "Colorado", "Camaro", "Malibu", "Suburban", "Blazer", "Corvette"],
-  BMW: ["3 Series", "5 Series", "7 Series", "X3", "X5", "M3", "M5", "X1", "X7", "4 Series"],
-  "Mercedes-Benz": ["C-Class", "E-Class", "S-Class", "GLC", "GLE", "A-Class", "CLA", "GLA", "AMG GT", "Sprinter"],
-  Audi: ["A4", "A6", "Q5", "Q7", "A3", "Q3", "A8", "TT", "R8", "e-tron"],
-  Nissan: ["Altima", "Maxima", "Rogue", "Pathfinder", "Frontier", "Titan", "Murano", "Sentra", "Kicks", "Armada"],
-  Hyundai: ["Elantra", "Sonata", "Tucson", "Santa Fe", "Kona", "Palisade", "Ioniq", "Venue", "Nexo", "Genesis"],
-  Kia: ["Sportage", "Sorento", "Telluride", "Soul", "Forte", "Stinger", "Carnival", "Seltos", "K5", "EV6"],
-};
-
-export const VEHICLE_YEARS = Array.from({ length: 30 }, (_, i) => String(2024 - i));
 
 export const VEHICLE_TYPES = ["Sedan", "SUV", "Truck", "Coupe", "Hatchback", "Wagon", "Van/Minivan", "Convertible", "Electric"];

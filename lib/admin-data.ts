@@ -78,13 +78,13 @@ export const adminSuppliers: DBSupplier[] = [
 
 // ── Customers ─────────────────────────────────────────────────
 export const adminCustomers: DBCustomer[] = [
-  { id:"c1", user_id:"u1", first_name:"Marcus", last_name:"Reed",    email:"marcus@example.com", phone:"555-0101", status:"active",    total_orders:8,  total_spent:842.16,  last_order_date:"2024-10-01T10:00:00Z", created_at:"2024-01-10T00:00:00Z" },
-  { id:"c2", user_id:"u2", first_name:"Sandra", last_name:"Kim",     email:"sandra@example.com", phone:"555-0102", status:"active",    total_orders:5,  total_spent:487.23,  last_order_date:"2024-10-03T09:00:00Z", created_at:"2024-02-14T00:00:00Z" },
-  { id:"c3", user_id:"u3", first_name:"James",  last_name:"Torres",  email:"james@example.com",  phone:"555-0103", status:"active",    total_orders:3,  total_spent:195.44,  last_order_date:"2024-10-06T14:00:00Z", created_at:"2024-03-20T00:00:00Z" },
-  { id:"c4", user_id:"u4", first_name:"Rachel", last_name:"Chen",    email:"rachel@example.com", phone:"555-0104", status:"active",    total_orders:12, total_spent:1284.55, last_order_date:"2024-10-07T11:00:00Z", created_at:"2024-01-05T00:00:00Z" },
-  { id:"c5", user_id:"u5", first_name:"Alex",   last_name:"Brown",   email:"alex@example.com",   phone:"555-0105", status:"active",    total_orders:2,  total_spent:103.80,  last_order_date:"2024-10-08T08:30:00Z", created_at:"2024-05-18T00:00:00Z" },
-  { id:"c6", user_id:"u6", first_name:"Maria",  last_name:"Lopez",   email:"maria@example.com",  phone:"555-0106", status:"suspended", total_orders:1,  total_spent:62.62,   last_order_date:"2024-10-11T10:00:00Z", created_at:"2024-09-01T00:00:00Z" },
-  { id:"c7", user_id:null, first_name:"Tom",    last_name:"Ashford", email:"tom@example.com",    phone:"555-0107", status:"active",    total_orders:7,  total_spent:623.44,  last_order_date:"2024-09-25T10:00:00Z", created_at:"2024-02-28T00:00:00Z" },
+  { id:"c1", user_id:"u1", first_name:"Marcus", middle_name:null, last_name:"Reed",    email:"marcus@example.com", phone:"555-0101", status:"active",    total_orders:8,  total_spent:842.16,  last_order_date:"2024-10-01T10:00:00Z", created_at:"2024-01-10T00:00:00Z" },
+  { id:"c2", user_id:"u2", first_name:"Sandra", middle_name:null, last_name:"Kim",     email:"sandra@example.com", phone:"555-0102", status:"active",    total_orders:5,  total_spent:487.23,  last_order_date:"2024-10-03T09:00:00Z", created_at:"2024-02-14T00:00:00Z" },
+  { id:"c3", user_id:"u3", first_name:"James",  middle_name:null, last_name:"Torres",  email:"james@example.com",  phone:"555-0103", status:"active",    total_orders:3,  total_spent:195.44,  last_order_date:"2024-10-06T14:00:00Z", created_at:"2024-03-20T00:00:00Z" },
+  { id:"c4", user_id:"u4", first_name:"Rachel", middle_name:null, last_name:"Chen",    email:"rachel@example.com", phone:"555-0104", status:"active",    total_orders:12, total_spent:1284.55, last_order_date:"2024-10-07T11:00:00Z", created_at:"2024-01-05T00:00:00Z" },
+  { id:"c5", user_id:"u5", first_name:"Alex",   middle_name:null, last_name:"Brown",   email:"alex@example.com",   phone:"555-0105", status:"active",    total_orders:2,  total_spent:103.80,  last_order_date:"2024-10-08T08:30:00Z", created_at:"2024-05-18T00:00:00Z" },
+  { id:"c6", user_id:"u6", first_name:"Maria",  middle_name:null, last_name:"Lopez",   email:"maria@example.com",  phone:"555-0106", status:"suspended", total_orders:1,  total_spent:62.62,   last_order_date:"2024-10-11T10:00:00Z", created_at:"2024-09-01T00:00:00Z" },
+  { id:"c7", user_id:null, first_name:"Tom",    middle_name:null, last_name:"Ashford", email:"tom@example.com",    phone:"555-0107", status:"active",    total_orders:7,  total_spent:623.44,  last_order_date:"2024-09-25T10:00:00Z", created_at:"2024-02-28T00:00:00Z" },
 ];
 
 // ── Inventory Transactions ────────────────────────────────────
@@ -107,9 +107,9 @@ export const adminPurchaseOrders: DBPurchaseOrder[] = [
 
 // ── Staff / Users ─────────────────────────────────────────────
 export const adminUsers: Profile[] = [
-  { id:"staff1", email:"admin@autocore.com",    first_name:"Daniel",  last_name:"Park",     phone:"313-555-9001", avatar_url:null, role:"super_admin",    is_active:true, last_login:"2024-10-12T08:00:00Z", created_at:"2024-01-01T00:00:00Z", updated_at:"2024-10-12T08:00:00Z" },
-  { id:"staff2", email:"manager@autocore.com",  first_name:"Sarah",   last_name:"Mitchell", phone:"313-555-9002", avatar_url:null, role:"manager",        is_active:true, last_login:"2024-10-12T07:30:00Z", created_at:"2024-01-15T00:00:00Z", updated_at:"2024-10-12T07:30:00Z" },
-  { id:"staff3", email:"cashier@autocore.com",  first_name:"Tom",     last_name:"Wilson",   phone:"313-555-9003", avatar_url:null, role:"cashier",        is_active:true, last_login:"2024-10-11T18:00:00Z", created_at:"2024-02-01T00:00:00Z", updated_at:"2024-10-11T18:00:00Z" },
-  { id:"staff4", email:"inventory@autocore.com",first_name:"James",   last_name:"Hart",     phone:"313-555-9004", avatar_url:null, role:"inventory_staff",is_active:true, last_login:"2024-10-12T06:00:00Z", created_at:"2024-03-10T00:00:00Z", updated_at:"2024-10-12T06:00:00Z" },
-  { id:"staff5", email:"staff@autocore.com",    first_name:"Linda",   last_name:"Ross",     phone:"313-555-9005", avatar_url:null, role:"cashier",        is_active:false,last_login:"2024-09-20T10:00:00Z", created_at:"2024-04-01T00:00:00Z", updated_at:"2024-09-20T10:00:00Z" },
+  { id:"staff1", email:"admin@autocore.com",    first_name:"Daniel",  middle_name:null, last_name:"Park",     phone:"313-555-9001", avatar_url:null, role:"super_admin",    is_active:true, last_login:"2024-10-12T08:00:00Z", created_at:"2024-01-01T00:00:00Z", updated_at:"2024-10-12T08:00:00Z" },
+  { id:"staff2", email:"manager@autocore.com",  first_name:"Sarah",   middle_name:null, last_name:"Mitchell", phone:"313-555-9002", avatar_url:null, role:"manager",        is_active:true, last_login:"2024-10-12T07:30:00Z", created_at:"2024-01-15T00:00:00Z", updated_at:"2024-10-12T07:30:00Z" },
+  { id:"staff3", email:"cashier@autocore.com",  first_name:"Tom",     middle_name:null, last_name:"Wilson",   phone:"313-555-9003", avatar_url:null, role:"cashier",        is_active:true, last_login:"2024-10-11T18:00:00Z", created_at:"2024-02-01T00:00:00Z", updated_at:"2024-10-11T18:00:00Z" },
+  { id:"staff4", email:"inventory@autocore.com",first_name:"James",   middle_name:null, last_name:"Hart",     phone:"313-555-9004", avatar_url:null, role:"inventory_staff",is_active:true, last_login:"2024-10-12T06:00:00Z", created_at:"2024-03-10T00:00:00Z", updated_at:"2024-10-12T06:00:00Z" },
+  { id:"staff5", email:"staff@autocore.com",    first_name:"Linda",   middle_name:null, last_name:"Ross",     phone:"313-555-9005", avatar_url:null, role:"cashier",        is_active:false,last_login:"2024-09-20T10:00:00Z", created_at:"2024-04-01T00:00:00Z", updated_at:"2024-09-20T10:00:00Z" },
 ];

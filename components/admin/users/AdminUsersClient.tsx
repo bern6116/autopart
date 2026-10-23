@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState } from "react";
 import { Plus, Edit2, UserX, UserCheck, X, Check } from "lucide-react";
@@ -10,11 +9,13 @@ import type { Profile, UserRole } from "@/types/database";
 const ROLES: UserRole[] = ["super_admin","admin","manager","cashier","inventory_staff"];
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:"Super Admin", admin:"Admin", manager:"Manager", cashier:"Cashier", inventory_staff:"Inventory Staff",
+  customer:"Customer",
 };
 const ROLE_COLORS: Record<UserRole, string> = {
   super_admin:"bg-red-100 text-red-800", admin:"bg-purple-100 text-purple-800",
   manager:"bg-blue-100 text-blue-800", cashier:"bg-green-100 text-green-800",
   inventory_staff:"bg-orange-100 text-orange-800",
+  customer:"bg-gray-100 text-gray-700",
 };
 
 export default function AdminUsersClient() {

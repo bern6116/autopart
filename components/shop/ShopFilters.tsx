@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { X, ChevronDown, ChevronUp, Car, SlidersHorizontal, RotateCcw } from "lucide-react";
-import { products, categories, brands } from "@/lib/data";
-import { VEHICLE_MAKES, VEHICLE_MODELS, VEHICLE_YEARS } from "@/lib/types";
+import type { Product } from "@/lib/types";
 import type { ShopFiltersState } from "@/components/shop/shopTypes";
 
 interface ShopFiltersProps {
@@ -14,18 +13,10 @@ interface ShopFiltersProps {
   sidebarOpen: boolean;
   onSidebarClose: () => void;
   totalResults: number;
+  products: Product[];
 }
 
 // Only show categories that exist in the products data
-const PRODUCT_CATEGORIES = Array.from(new Set(products.map((p) => p.category))).sort();
-const PRODUCT_BRANDS = Array.from(new Set(products.map((p) => p.brand))).sort();
-const BRAND_COUNTS = Object.fromEntries(
-  PRODUCT_BRANDS.map((b) => [b, products.filter((p) => p.brand === b).length])
-);
-const CATEGORY_COUNTS = Object.fromEntries(
-  PRODUCT_CATEGORIES.map((c) => [c, products.filter((p) => p.category === c).length])
-);
-
 const RATING_OPTIONS = [
   { value: 4.5, label: "4.5 & up" },
   { value: 4.0, label: "4.0 & up" },
@@ -112,10 +103,19 @@ export default function ShopFilters({
   sidebarOpen,
   onSidebarClose,
   totalResults,
+  products,
 }: ShopFiltersProps) {
-  const vehicleModels = filters.vehicleMake
-    ? (VEHICLE_MODELS[filters.vehicleMake] ?? [])
-    : [];
+  const PRODUCT_CATEGORIES = Array.from(new Set(products.map((p) => p.category).filter(Boolean))).sort();
+  const PRODUCT_BRANDS = Array.from(
+    new Map(products.filter((p) => p.brand && p.brandSlug).map((p) => [p.brandSlug!, { slug: p.brandSlug!, name: p.brand }])).values()
+  ).sort((a, b) => a.name.localeCompare(b.name));
+  const BRAND_COUNTS = Object.fromEntries(PRODUCT_BRANDS.map((brand) => [brand.slug, products.filter((p) => p.brandSlug === brand.slug).length]));
+  const CATEGORY_COUNTS = Object.fromEntries(PRODUCT_CATEGORIES.map((c) => [c, products.filter((p) => p.category === c).length]));
+  const hondaFitments = products.flatMap(p=>p.compatibility).filter(f=>f.make==="Honda");
+  const vehicleModels = Array.from(new Set(hondaFitments.map(f=>f.model))).sort();
+  const modelFitments = hondaFitments.filter(f=>!filters.vehicleModel||f.model===filters.vehicleModel);
+  const vehicleYears = Array.from(new Set(modelFitments.flatMap(f=>Array.from({length:f.yearTo-f.yearFrom+1},(_,i)=>String(f.yearTo-i))))).sort((a,b)=>Number(b)-Number(a));
+  const vehicleEngines = Array.from(new Set(modelFitments.filter(f=>!filters.vehicleYear||(Number(filters.vehicleYear)>=f.yearFrom&&Number(filters.vehicleYear)<=f.yearTo)).map(f=>f.engine).filter(Boolean))) as string[];
 
   const toggleCategory = (cat: string) => {
     const next = filters.categories.includes(cat)
@@ -179,30 +179,12 @@ export default function ShopFilters({
         {/* Vehicle Compatibility */}
         <Section title="Vehicle Compatibility">
           <div className="space-y-2">
-            <div className="relative">
-              <select
-                value={filters.vehicleMake}
-                onChange={(e) =>
-                  onFiltersChange({
-                    vehicleMake: e.target.value,
-                    vehicleModel: "",
-                    vehicleYear: "",
-                  })
-                }
-                className={selectClass}
-              >
-                <option value="">All Makes</option>
-                {VEHICLE_MAKES.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-              <Car size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            </div>
+            <div className="relative rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-bold text-[#0d0d0d]">Honda<Car size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" /></div>
             <div className="relative">
               <select
                 value={filters.vehicleModel}
-                onChange={(e) => onFiltersChange({ vehicleModel: e.target.value, vehicleYear: "" })}
-                disabled={!filters.vehicleMake}
+                onChange={(e) => onFiltersChange({ vehicleModel: e.target.value, vehicleYear: "", vehicleEngine: "" })}
+                disabled={vehicleModels.length===0}
                 className={`${selectClass} disabled:bg-gray-50 disabled:text-gray-400`}
               >
                 <option value="">All Models</option>
@@ -214,18 +196,20 @@ export default function ShopFilters({
             <div className="relative">
               <select
                 value={filters.vehicleYear}
-                onChange={(e) => onFiltersChange({ vehicleYear: e.target.value })}
+                onChange={(e) => onFiltersChange({ vehicleYear: e.target.value, vehicleEngine: "" })}
+                disabled={!filters.vehicleModel}
                 className={selectClass}
               >
                 <option value="">All Years</option>
-                {VEHICLE_YEARS.map((y) => (
+                {vehicleYears.map((y) => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
             </div>
-            {filters.vehicleMake && (
+            {vehicleEngines.length>0&&<div className="relative"><select value={filters.vehicleEngine} onChange={e=>onFiltersChange({vehicleEngine:e.target.value})} disabled={!filters.vehicleYear} className={selectClass}><option value="">Any verified variant</option>{vehicleEngines.map(e=><option key={e} value={e}>{e}</option>)}</select></div>}
+            {filters.vehicleModel && (
               <button
-                onClick={() => onFiltersChange({ vehicleMake: "", vehicleModel: "", vehicleYear: "" })}
+                onClick={() => onFiltersChange({ vehicleMake: "", vehicleModel: "", vehicleYear: "", vehicleEngine: "" })}
                 className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1"
               >
                 <X size={11} /> Clear vehicle
@@ -249,16 +233,16 @@ export default function ShopFilters({
           </div>
         </Section>
 
-        {/* Brand */}
-        <Section title="Brand">
+        {/* Parts manufacturer */}
+        <Section title="Parts Brands">
           <div className="space-y-0.5">
             {PRODUCT_BRANDS.map((brand) => (
               <CheckboxItem
-                key={brand}
-                checked={filters.brands.includes(brand)}
-                onChange={() => toggleBrand(brand)}
-                label={brand}
-                count={BRAND_COUNTS[brand]}
+                key={brand.slug}
+                checked={filters.brands.includes(brand.slug) || filters.brands.includes(brand.name)}
+                onChange={() => toggleBrand(brand.slug)}
+                label={brand.name}
+                count={BRAND_COUNTS[brand.slug]}
               />
             ))}
           </div>

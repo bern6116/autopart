@@ -6,15 +6,12 @@ import VehicleFinder from "@/components/sections/VehicleFinder";
 import ShopByCategory from "@/components/sections/ShopByCategory";
 import FeaturedProducts from "@/components/sections/FeaturedProducts";
 import FrequentlyBoughtTogether from "@/components/sections/FrequentlyBoughtTogether";
-import DealsOfTheWeek from "@/components/sections/DealsOfTheWeek";
-import FeaturedBrands from "@/components/sections/FeaturedBrands";
-import PromoBanner from "@/components/sections/PromoBanner";
 import BlogSection from "@/components/sections/BlogSection";
+import ServiceStrip from "@/components/sections/ServiceStrip";
 
 export const metadata: Metadata = {
-  title: "Auto Core — Reliable Auto Parts Built To Last",
-  description:
-    "Shop OEM and aftermarket auto parts from 200+ trusted brands. Find parts by vehicle, browse categories, and get free shipping on orders over $75.",
+  title: "Auto Core — Auto Parts for Cars and Trucks",
+  description: "Search AutoCore's Honda-focused parts catalog by vehicle, product name, parts brand, or part number.",
 };
 
 export default function HomePage() {
@@ -37,17 +34,11 @@ export default function HomePage() {
         {/* 5. Frequently Bought Together */}
         <FrequentlyBoughtTogether />
 
-        {/* 6. Deals of the Week */}
-        <DealsOfTheWeek />
-
-        {/* 7. Featured Brands + Stats */}
-        <FeaturedBrands />
-
-        {/* 8. Promo Banner (Online Exclusive + smaller promos) */}
-        <PromoBanner />
-
-        {/* 9. Blog / Insights */}
+        {/* 6. Tips and guides */}
         <BlogSection />
+
+        {/* 7. Verified store services */}
+        <ServiceStrip />
       </main>
       <Footer />
     </>
